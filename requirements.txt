@@ -1,0 +1,5 @@
+jupyterlab>=4.2
+ipykernel
+pandas
+sqlalchemy>=2
+psycopg[binary]>=3.1

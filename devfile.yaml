@@ -1,0 +1,61 @@
+schemaVersion: 2.2.0
+metadata:
+  name: analys-demo
+  displayName: Analysmiljö (Python + Jupyter)
+components:
+  - name: python
+    container:
+      image: registry.redhat.io/devspaces/udi-rhel9:latest
+      memoryRequest: 1Gi
+      memoryLimit: 4Gi
+      cpuRequest: 500m
+      cpuLimit: "2"
+      mountSources: true
+      env:
+        - name: PIP_DISABLE_PIP_VERSION_CHECK
+          value: "1"
+        - name: VENV
+          value: /projects/.venv
+      endpoints:
+        - name: jupyterlab
+          targetPort: 8888
+          exposure: public
+          protocol: https
+          path: /lab
+commands:
+  - id: setup
+    exec:
+      label: "1. Installera Python-miljö"
+      component: python
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: |
+        test -x $VENV/bin/python || python3 -m venv $VENV
+        $VENV/bin/pip install -q -r requirements.txt
+        mkdir -p $VENV/etc/jupyter/labconfig
+        cp jupyter/page_config.json $VENV/etc/jupyter/labconfig/
+        echo "Python-miljö klar"
+  - id: jupyterlab
+    exec:
+      label: "2. Starta JupyterLab"
+      component: python
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: |
+        $VENV/bin/jupyter lab --ip=0.0.0.0 --port=8888 --no-browser \
+          --ServerApp.allow_remote_access=True \
+          --ServerApp.trust_xheaders=True \
+          --IdentityProvider.token='' \
+          --ServerApp.root_dir=${PROJECT_SOURCE}
+  # Körs automatiskt vid start, i bakgrunden så att workspace-starten inte blockeras
+  - id: setup-bg
+    exec:
+      component: python
+      workingDir: ${PROJECT_SOURCE}
+      commandLine: >-
+        nohup bash -c 'test -x $VENV/bin/python || python3 -m venv $VENV;
+        $VENV/bin/pip install -q -r requirements.txt;
+        mkdir -p $VENV/etc/jupyter/labconfig;
+        cp jupyter/page_config.json $VENV/etc/jupyter/labconfig/'
+        > /tmp/setup.log 2>&1 &
+events:
+  postStart:
+    - setup-bg
