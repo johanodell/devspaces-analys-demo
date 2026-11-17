@@ -29,7 +29,7 @@ commands:
       component: python
       workingDir: ${PROJECT_SOURCE}
       commandLine: |
-        test -x $VENV/bin/python || python3 -m venv $VENV
+        $VENV/bin/python -c "import sys; assert sys.version_info >= (3, 11)" 2>/dev/null || { rm -rf $VENV; python3.11 -m venv $VENV; }
         $VENV/bin/pip install -q -r requirements.txt
         mkdir -p $VENV/etc/jupyter/labconfig
         cp jupyter/page_config.json $VENV/etc/jupyter/labconfig/
@@ -51,7 +51,7 @@ commands:
       component: python
       workingDir: ${PROJECT_SOURCE}
       commandLine: >-
-        nohup bash -c 'test -x $VENV/bin/python || python3 -m venv $VENV;
+        nohup bash -c '$VENV/bin/python -c "import sys; assert sys.version_info >= (3, 11)" 2>/dev/null || { rm -rf $VENV; python3.11 -m venv $VENV; };
         $VENV/bin/pip install -q -r requirements.txt;
         mkdir -p $VENV/etc/jupyter/labconfig;
         cp jupyter/page_config.json $VENV/etc/jupyter/labconfig/'
